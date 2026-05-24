@@ -1,6 +1,6 @@
 {
     "id": "ZenRoundedWebview",
-    "name": "Smooth Webview Corners",
+    "name": "ZenRoundedWebview",
     "description": "Forces anti-aliasing on webview corners using clipping",
     "scripts": {
         "ZenRoundedWebview.uc.js": {
