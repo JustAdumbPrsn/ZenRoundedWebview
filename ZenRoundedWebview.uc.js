@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           ZenRoundedWebview
-// @version        1.0
+// @version        1.1
 // @author         JustAdumbPrsn
 // @description    Forces anti-aliasing on webview corners using clipping
 // @compatibility  Zen Browser
