@@ -1,0 +1,19 @@
+{
+    "id": "ZenRoundedWebview",
+    "name": "Smooth Webview Corners",
+    "description": "Forces anti-aliasing on webview corners using clipping",
+    "scripts": {
+        "ZenRoundedWebview.uc.js": {
+            "include": [
+                "chrome://browser/content/browser.xhtml"
+            ]
+        }
+    },
+    "author": "JustAdumbPrsn",
+    "version": "1.0",
+    "tags": [
+             "sine",
+             "JavaScript"
+    	    ],
+    "fork": ["zen"]
+}
