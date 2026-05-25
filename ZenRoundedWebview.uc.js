@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name           ZenRoundedWebview
-// @version        1.1
+// @version        1.2
 // @author         JustAdumbPrsn
-// @description    Forces anti-aliasing on webview corners using clipping
+// @description    Forces anti-aliasing on webview corners using clipping, excluding Zen Glance views
 // @compatibility  Zen Browser
 // ==/UserScript==
 
@@ -32,6 +32,18 @@
     // Handle clip-path execution for inner webview panels
     function clipRoundRect(el) {
         if (!el) return;
+
+        // EXCLUSION: Skip elements that belong to Zen's Glance overlay/background features,
+        // as clipping them would hide their side-docked action buttons.
+        const parent = el.closest('.browserSidebarContainer');
+        if (parent && (
+            parent.classList.contains('zen-glance-overlay') || 
+            parent.classList.contains('zen-glance-background')
+        )) {
+            el.style.clipPath = ""; // Remove any existing clipping so buttons can render
+            return;
+        }
+
         const w = el.clientWidthDouble || el.clientWidth;
         const h = el.clientHeightDouble || el.clientHeight;
         if (w === 0 || h === 0) return;
@@ -56,16 +68,27 @@
         clipPathObserver.observe(el);
     }
 
-    // Observe the tab panels to automatically catch new tabs and split-views
+    // Observe the tab panels to automatically catch new tabs, split-views, and glance transitions
     const panelObserver = new MutationObserver(mutations => {
         for (const mutation of mutations) {
-            for (const node of mutation.addedNodes) {
-                if (node.nodeType === 1) { 
-                    if (node.classList.contains('browserSidebarContainer')) {
-                        const inner = node.querySelector('.browserContainer');
-                        if (inner) clipEl(inner);
-                    } else if (node.querySelectorAll) {
-                        node.querySelectorAll('.browserSidebarContainer > .browserContainer').forEach(child => clipEl(child));
+            if (mutation.type === 'childList') {
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === 1) { 
+                        if (node.classList.contains('browserSidebarContainer')) {
+                            const inner = node.querySelector('.browserContainer');
+                            if (inner) clipEl(inner);
+                        } else if (node.querySelectorAll) {
+                            node.querySelectorAll('.browserSidebarContainer > .browserContainer').forEach(child => clipEl(child));
+                        }
+                    }
+                }
+            } else if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const node = mutation.target;
+                if (node.nodeType === 1 && node.classList.contains('browserSidebarContainer')) {
+                    const inner = node.querySelector('.browserContainer');
+                    if (inner) {
+                        // Re-evaluate clipping since the container class transitioned (e.g. into a Glance overlay)
+                        clipRoundRect(inner);
                     }
                 }
             }
@@ -79,7 +102,7 @@
         const style = document.createElement('style');
         style.id = STYLE_ID;
         style.textContent = `
-            .browserSidebarContainer {
+            .browserSidebarContainer:not(.zen-glance-background):not(.zen-glance-overlay) {
                 background-color: transparent !important;
             }
         `;
@@ -92,10 +115,15 @@
         // Target any already-open panels (Split views, etc.)
         document.querySelectorAll('.browserSidebarContainer > .browserContainer').forEach(el => clipEl(el));
 
-        // Safely attach to the tab container
+        // Safely attach to the tab container and observe class mutations
         const tabpanels = document.getElementById("tabbrowser-tabpanels");
         if (tabpanels) {
-            panelObserver.observe(tabpanels, { childList: true, subtree: true });
+            panelObserver.observe(tabpanels, { 
+                childList: true, 
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class']
+            });
         }
     }
 
